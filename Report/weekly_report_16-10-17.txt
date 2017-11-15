@@ -1,0 +1,124 @@
+****  Semaine 16/10/17 *****
+
+***
+ Réunion Vincent Compte rendu (16/10) : 
+	On cherche à prédire le type de la tumeur ainsi que le grade, 
+	Biopsie : apporte de l'information à l'aide de l'anapath cependant, le résultat est souvent subjectif -> utilisation des radiomics 
+	Dans notre cas : apport nouveau par rapport aux radiomics -> information concernant la dynamique (flux artériels, veineux) 
+	Bibliothèques python utiles : py radiomics, sklearn 
+	Méthodes à regarder : Auto-encodeur, analyse ROC -> permet en gros de comparer des algos dépendants de variables extérieures différentes 
+***
+
+
+***
+Réunion Vincent - Fabrice (20/10) :
+	TODO : 
+		Cours de Pierre Charbonnier à partir du 14/11 sur la classification 
+		Cours d'introduction au deep learning par Nicolas Padois à partir du 09/01/17 
+		Site de l'école doctorale pour connaître le nombre d'heures de cours à suivre sur le doctorat, le nombre de séminaires, etc
+		Essayer de compléter la base de données des publi avec des articles récents, priorité pour ceux qui parlent du foie
+		Lecture? : Deep learning book bengio 
+ 
+	Pour le projet : plusieurs bases de données ne seront vraisemblablement pas accessibles (ex celle de Paris), essayer de voir si les RCP peuvent nous aider 
+	RCP : réunion de concertation pluridisciplinaire -> semble plus faciles à avoir que les rapports anapat (pb : uniquement en PDF)
+	
+	Les patients uniquement dispo seront ceux qui auront reçus une chirurgie -> on devra chercher les patients pour lesquels on a des images avant leur première chimio (pour ne pas que le traitement influence les résultats)
+	CT multiphases: (avec temps artériel, veineux, tardif...)
+	
+	2 stratégies pour la suite : 
+		- Essayer de faire le travail uniquement avec le foie avec le risque d'avoir une base de données très petite (problème pour la validation...)
+		- Se lancer sur d'autres organes (poumons, seins ... )
+	Un bilan sera fait dans 6 mois environ afin de savoir comment avance la récupération des données sur d'autres bases avant de faire un choix 
+
+		
+***
+
+
+***
+ Travail personnel :
+ 
+- Lecture rapport Stagiaire : ( Document papier : "Stage Radiomics 1+2)
+	Biopsie : technique actuellement utilisée pour la classification d'une tumeur -> problèmes (invasif, tumeurs non atteignables parfois, non prise en compte de l'hétérogénéité de la tumeur) => Utilisation de l'imagerie pour l'aide au diagnostic + Radiomics (qui ont prouvés leur efficacité sur les cancers du poumon, 
+	
+	Processus Radiomics : 
+		1. Acquisition d'images 
+		2. Segmentation (auto ou via un expert)
+		3. Extraction des caractéristiques
+		4. Réduction de la dimensionalité 
+		5. Dév d'un modèle permettant de classer la tumeur
+
+	Types de features en Radiomics : 
+		Basés sur l'histogramme (on parle de statistiques du premier ordre car on ne tient pas en compte de la relation spatiale des voxels) : ex Entropie...
+		Basés sur la forme et la taille 
+		Basés sur la texture (on parle ici de statistiques du second ordre) : on tient en compte la relation intervoxel à l'aide de matrices de dépendance
+		Après filtrage -> l'image initiale est filtrée et on effectue une analyse statistique par la suite. Deux types de filtrage sont classiquement utilisés : Spatial (à l'aide d'un élément structurant), En ondelette (prise en compte de l'échelle de la région)
+
+	Réduction de dimensionalité : 
+		Méthodes de filtrage (information mutuelles, Wilcoxon...)
+		Méthodes "wrappers" : découpent les features en sous-ensembles et les évalue
+		Méthodes embarquées : la sélection des features se fait durant la classification (ex : arbres de décision)
+	
+	Travail effectué sur une base de poumon (car base de foie non encore existante), 
+les patients sont atteints de NSCLC (Non-small Cell Lung Cancer), dont il existe 4 différents type de tumeurs : 
+		- Adénocarcinome (ACC)
+		- Squamous-Cell Carcinoma (SCC), squamous = forme d'écaille
+		- Carcinome non différencié 
+		- Nos (Not otherwise specified) : lorsque le type de la tumeur ne peut être spécifié avec certitude
+
+	DICOM : Utilisation de CT-Scan + RTStruct (type de modalité contenant les informations de segmentation : liste de coordonnées), si l'information de segmentation est manquante pour quelques coupes, une interpolation linéaire est utilisée
+	
+	Radiomics features computation : 
+		Objectif : déterminer le type de la tumeur uniquement à partir des données d'imagerie
+		Utilisation des différentes méthodes d'extraction de caractéristiques (1100 features) -> Reduction de dimensionalité (Matrice de corrélation) + selection de features (information mutuelle) 
+		Méthode de classificaition utilisée : Random Forest + 10-fold cross validation -> résultat faible pour les quatres classes, en binaire un couple semble avoir du mal (SCC - large Cell), selon les experts les deux types de tumeur partagent des informations spatiales et de formes relativement similaires, un des facteurs permettant de les différencier et leur localisation -> chose qui n'est pas prise en compte pour le moment dans le modèle 
+
+	CCL : 
+		Objectif à long terme : utiliser les radiomics pour déterminer le phénotype d'une tumeur (grade + type) dans le cas du foie
+		? Utilisation des informations multi-phases + autoencodeurs 
+
+
+
+
+- Début lecture : MASTERING MACHINE - Learning with scikit-learn
+	Difference Classification - regression 
+		Classification : prédire à quelle classe appartient une variable
+		Regression : prédire une valeur continue associée à une ou plusieurs valeurs d'entrée
+
+	Clustering : partie de l'apprentissage non supervisé consistant à regrouper les différentes observations en groupes, nommés cluster 
+
+	Découpage classique des données : Jeux d'apprentissage ; Jeux de test ; Jeux de Validation 
+	Cross-Validation : Faire un roulement entre les différents groupes pour que chacun soit utilisé au moins une fois en tant que jeu de validation
+	
+	Causes d'erreurs lors de la prédiction : 
+		Biais : Modèle avec biais élevé retournera toujours la même erreur indépendamment du jeu de test utilisé -> sous-apprentissage 
+		Variance : avec variance élevé : retournera une erreur différente en fonction du jeu de test utilise -> sur-apprentissage
+		--> Compromis entre le biais et la variance (Bias-Variance trade-off)
+
+	Score : 
+		Accuracy : VP + VN / VP + VN + FP + FN
+		Precision : VP / VP + FP 
+		Recall : VP / VP + FN 
+	
+	Hyperplan : Sous-espace contenant une dimension de moins que l'espace qui le contient 
+	Rappel : xbarre = moyenne de l'ensemble 
+	Variance : permet de déterminer comment sont éparpillés les données dans un ensemble 
+		variance (x) = Somme des différences au carré par rapport à la moyenne divisée par le nombre d'individus dans l'ensemble
+	Covariance : permet de déterminer comment deux variables évoluent l'une par rapport à l'autre
+		covariance(x,y) = somme (xi - xbarre) (yi - ybarre) / nombre d'invidus - 1
+
+	Regression Linaire :
+		Simple : 
+			la Valeur de sortie dépend uniquement d'une valeur en entrée (une seule observation, ex: prix de la pizza en fonction de son diamètre)
+			L'hyperplan associé est une droite 
+		Multiple :
+			La valeur obtenue dépend de plusieurs variables en entrée 
+	Evaluer le modèle : R-squared (si r = 0.35 , 35% de la variation dans le jeu de test est expliqué par le modèle)
+	Regression Polynomiale : 
+		Le modèle dépend de plusieurs variables mais elles sont cette fois pondérées par des coefficients,
+		Exemple de régression polynomiale : la regression quadratique : y = a + B1x + B2x²
+		Attention -> degré trop élevé => sur-apprentissage 
+	
+	Régularisation : Mécanisme pouvant prévenir le sur-apprentissage -> cherche le modèle le plus simple pour expliquer les donneées: exemple Rigde-regression, LASSO
+
+	Librairie Pandas : permet de traiter des fichiers csv (sous forme de tableau) dans python
+***
